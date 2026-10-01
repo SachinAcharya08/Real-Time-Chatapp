@@ -4,6 +4,10 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Threads,Messages
 from .serializers import ThreadsSerializer,MessagesSerializer
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+
+
 
 class ThreadViewset(viewsets.ViewSet):
     def list(self,request):
@@ -46,14 +50,20 @@ class ThreadViewset(viewsets.ViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class MessageViewset(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
     def list(self,request):
         thread_id=request.query_params.get('thread')
         qs = Messages.objects.filter(thread__members=request.user)
+        
         if thread_id:
             qs=qs.filter(thread=thread_id).order_by('created_at')
 
-        serializer=MessagesSerializer(qs,many=True)
-        return Response(serializer.data)
+        paginator=PageNumberPagination()
+        paginator.page_size=1
+        paginated_qs=paginator.paginate_queryset(qs,request)
+
+        serializer=MessagesSerializer(paginated_qs,many=True)
+        return paginator.get_paginated_response(serializer.data)
     
     def create(self,request):
         serializer=MessagesSerializer(data=request.data)
