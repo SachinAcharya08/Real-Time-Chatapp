@@ -57,9 +57,10 @@ class MessageViewset(viewsets.ViewSet):
         
         if thread_id:
             qs=qs.filter(thread=thread_id).order_by('created_at')
+        
 
         paginator=PageNumberPagination()
-        paginator.page_size=1
+        paginator.page_size=100
         paginated_qs=paginator.paginate_queryset(qs,request)
 
         serializer=MessagesSerializer(paginated_qs,many=True)
